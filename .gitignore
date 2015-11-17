@@ -1,0 +1,13 @@
+*.xml
+*.so
+*.jar
+indexCnTest/*
+build/*
+Data/*
+nlpir.properties
+WebContent/META-INF
+WebContent/WEB-INF
+.classpath
+.project
+.settings
+
