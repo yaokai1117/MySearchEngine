@@ -1,6 +1,7 @@
 package search;
 import java.nio.file.Paths;
 import java.util.LinkedList;
+import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -37,20 +38,51 @@ public class Searcher {
 	
 	public LinkedList<String> search(String queryString, ScoreDoc after) throws Exception {
 		Query query = qParser.parse(queryString);
+		
+		// get parsed query words
+		StringTokenizer queryToks = new StringTokenizer(query.toString());
+		LinkedList<String> queryWords = new LinkedList<>();
+		while (queryToks.hasMoreTokens()) {
+			String tok = queryToks.nextToken();
+			queryWords.add(tok.substring(8, tok.length()));
+		}
+		
+		// debug
 		System.out.println("Searching for:" + queryString);
-		//TopDocs rsDocs = searcher.search(query, 10);
+
 		TopDocs rsDocs = searcher.searchAfter(after, query, 10);
 		LinkedList<String> ret = new LinkedList<>();
 		int length = rsDocs.scoreDocs.length;
 		for (int i = 0; i < length; i++) {
 			Document hitDoc = searcher.doc(rsDocs.scoreDocs[i].doc);
 			StringBuffer sBuffer = new StringBuffer();
-			sBuffer.append("========================================================== Score:" + rsDocs.scoreDocs[i].score + "<br/>");
+			sBuffer.append("<br/>");
+			
+			// handle news title
+			String titleStr = hitDoc.getField("title").stringValue();
+			for (String word : queryWords) {
+				System.out.println(word);
+				titleStr = titleStr.replaceAll(word, "<b class=\"queryword\">" + word + "</b>");
+			}
 			sBuffer.append("<a href=\"" + 
 					hitDoc.getField("url").stringValue() + "\">"+ 
-					hitDoc.getField("title").stringValue() + "<a>" + "<br/>");
+					titleStr + "<a>" + "<br/>");
+			
+			// handle key word
 			sBuffer.append("keywords: " + hitDoc.getField("keywords").stringValue() + "<br/>");
-			sBuffer.append("content: " + hitDoc.getField("content").stringValue()+ "<br/>");
+			
+			// handle news content
+			String contetnStr = hitDoc.getField("content").stringValue();
+			if (contetnStr.length() > 200)
+				contetnStr = contetnStr.substring(0, 200);
+			for (String word : queryWords) {
+				System.out.println(word);
+				contetnStr = contetnStr.replaceAll(word, "<b class=\"queryword\">" + word + "</b>");
+			}
+			sBuffer.append(contetnStr+ "<br/>");
+			
+			sBuffer.append("<br/>");
+			sBuffer.append(hitDoc.getField("url").stringValue() + "<br/>");
 			sBuffer.append("<br/>");
 			ret.add(sBuffer.toString());
 		}
@@ -68,7 +100,6 @@ public class Searcher {
 		String indexPath = "indexCnTest";
 		try {
 			Searcher searcher = new Searcher(indexPath);
-			searcher.search("哈利波特");
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
